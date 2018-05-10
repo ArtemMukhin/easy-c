@@ -1,0 +1,54 @@
+"sl/control" useFile 
+
+{ pathname: "";
+  flags: 0i32; }
+{ fd: 0i32; }
+"libc.dylib" "open" importDynamic
+
+{ fd: 0i32; }
+{ result: 0i32; }
+"libc.dylib" "close" importDynamic
+
+{ fd: 0i32;
+  stat: 0nx; }
+{ result: 0i32; }
+"libc.dylib" "fstat" importDynamic
+
+{ fd: 0i32;
+  buff: 0nx;
+  nbyte: 0nx; }
+{ result: 0nx; }
+"libc.dylib" "read" importDynamic
+
+{}
+{ result: 0i32; }
+"libc.dylib" "errno" importDynamic
+
+
+MacosSystem: {
+  loadFile: [
+    name:;
+    OPEN_EXISTING: 256i32;
+    fd: name OPEN_EXISTING open;
+    fd -1i32 = [
+#      "Load file " name & " error " & print errno print LF print
+      FALSE
+    ] [
+      fileStat: 144n32 allocateMemory;
+      fd fileStat fstat drop
+      fileSize: 0nx fileStat 72nx + readMemory;
+      stringPointer:  fileSize 1nx + allocateMemory;
+      0n8 stringPointer fileSize 0nx cast + writeMemory
+      fd stringPointer fileSize read drop
+      fd close drop
+      stringPointer fileSize memoryToText
+      stringPointer freeMemory
+      fileStat freeMemory
+      TRUE
+    ] if
+  ] func;
+
+  hasImportDynamic: FALSE;
+
+  hasFileSystem: TRUE;
+};

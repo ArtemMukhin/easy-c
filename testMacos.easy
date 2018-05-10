@@ -1,0 +1,5 @@
+"EasyCompiler" useFile
+"macossystem" useFile
+
+compiler: MacosSystem EasyCompiler;
+( "." ) "testMacos.easy" compiler.start
