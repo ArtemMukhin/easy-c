@@ -9,6 +9,8 @@
 "passInlineLabels" useFile
 "passInlineUsedFiles" useFile
 "passProcessStrings" useFile
+"passDeclaredLabels" useFile
+"passArithmetic" useFile
 
 EasyCompiler: [{
     system:;
@@ -92,6 +94,27 @@ EasyCompiler: [{
         TRUE mplMain.!exported
         function: mplMain;
         builder: function.appendBasicBlock IRBuilder;
+
+        labels: HashTable;
+        nodes passDeclaredLabels ~ [ throw ] when !labels drop
+
+        isPlusRedefined:  "+" labels.find; drop
+        isMinusRedefined: "-" labels.find; drop
+        isMulRedefined:   "*" labels.find; drop        
+        isDivRedefined:   "/" labels.find; drop
+
+        "--- Labels ----" LF & print
+        r: labels.makeRange;
+        r [print LF print TRUE] enum
+        LF print
+        "------------------" LF & print
+        LF print
+
+        isPlusRedefined isMinusRedefined or isMulRedefined or isDivRedefined or ~ [
+            "--- Arithmetic ---" LF & print
+            nodes passArithmetic drop drop
+            "------------------" LF & print
+        ] when
 
         #"inlining labels..." LF & print
         nodes passInlineLabels ~ [ throw ] when !nodes

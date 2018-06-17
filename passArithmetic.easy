@@ -1,0 +1,189 @@
+# Traverse AST tree and reduce arithmetic expressions.
+# The original tree is not preserved.
+# input:
+#   nodes - array of AST tree root nodes
+# output:
+#   nodes
+#   TRUE
+#   -- or --
+#   text containing error message
+#   FALSE
+
+"sl/control" useFile
+"sl/algorithm" useFile
+"sl/linkedList" useFile
+"sl/array" useFile
+
+
+passArithmetic: [
+  newNodes: ();
+
+  isNumber: [
+    node:;
+    node "NUMBERI32_NODE" has
+  ] func;
+
+  isArithOp: [
+    node:;
+
+    node "NAME_NODE" has [
+      node.name "+" = node.name "-" = or node.name "*" = or
+    ] [ FALSE ] if
+  ] func;
+
+  createNewNode: [
+    oldNode:;
+    newValue:;
+    newNode: {
+      AST_NODE:();
+      NUMBERI32_NODE:();
+      token: newValue toText;
+      value: newValue;
+      offset: node.offset;
+      line: node.line;
+      column: node.column;
+      filename: node.filename;
+    };
+    newNode
+  ] func;
+
+  evalNewValue: [
+    op:;
+    value2:;
+    value1:;
+    
+    op "+" = [ value1 value2 + ] [
+    op "-" = [ value1 value2 - ] [
+    op "*" = [ value1 value2 * ] [
+    op "/" = [ value1 value2 / ] [ throw ]
+    if ] if ] if ] if
+    
+  ] func;
+
+  processNodes: [
+    isRoot:;
+    nodes:;
+
+    value: 0;
+    isValue: FALSE;
+    i: 0;
+    newIndex: 0;
+    right: nodes fieldCount 2 -;
+
+    [ i right < ] [
+      node: i nodes @;
+      nextNode: i 1 + nodes @;
+      nextNextNode: i 2 + nodes @;
+      
+      node isNumber nextNode isNumber and nextNextNode isArithOp and [
+        value1: node.value;
+        value2: nextNode.value;
+
+        newValue: value1 value2 nextNextNode.name evalNewValue;
+        newValue !value
+
+        newNode: newValue node createNewNode;
+
+        # nodes[newIndex++] := newNode
+        newNode newIndex nodes !
+        newIndex 1 + !newIndex
+
+        i 2 + !i
+        TRUE !isValue
+      ] [
+        isValue node isNumber and nextNode isArithOp and [
+          newIndex 1 - !newIndex
+          value2: node.value;
+
+          newValue: value value2 nextNode.name evalNewValue;
+          newValue !value
+          newNode: newValue node createNewNode;
+
+          # nodes[newIndex++] := newNode
+          newNode newIndex nodes !
+          newIndex 1 + !newIndex
+
+          i 1 + !i
+        ] [
+          # nodes[newIndex++] := node
+          node newIndex nodes !
+          newIndex 1 + !newIndex
+
+          FALSE !isValue
+
+          node "children" has [ node.children FALSE processNodes node.!children ] when
+        ] if
+      ] if
+
+      i 1 + !i
+    ] while
+
+    last: nodes fieldCount 1 -;
+
+    i last = [
+      node: i nodes @;
+      
+      # nodes[newIndex++] := node
+      node newIndex nodes !
+      newIndex 1 + !newIndex
+
+      FALSE !isValue
+
+      node "children" has [ node.children FALSE processNodes node.!children ] when
+    ] [
+      i last < [
+        node: i nodes @;
+        nextNode: i 1 + nodes @;
+
+        isValue node isNumber and nextNode isArithOp and [
+          newIndex 1 - !newIndex
+          value2: node.value;
+
+          newValue: value value2 nextNode.name evalNewValue;
+          newNode: newValue node createNewNode;
+
+          # nodes[newIndex++] := newNode
+          newNode newIndex nodes !
+          newIndex 1 + !newIndex
+        ] [
+          # nodes[newIndex++] := node
+          node newIndex nodes !
+          newIndex 1 + !newIndex
+        
+          FALSE !isValue
+
+          node "children" has [ node.children FALSE processNodes node.!children ] when
+        ] if
+      ] when
+    ] if
+
+    result: ();
+    index: 0;
+    # index newIndex = or 
+    [ index newIndex < ] [
+      node: index nodes @;
+      result node , drop
+      index 1 + !index
+    ] while
+
+    isRoot ~ [ result ] [ newNodes result [ , ] each drop] if
+  ] func;
+
+  oldNodes1: nodes makeList;
+  r1: oldNodes1.makeRange;
+  "===Old nodes===" LF & print
+  r1 [print LF print TRUE] enum
+  LF print
+  "===============" LF & print
+
+  nodes TRUE processNodes
+
+  newNodes1: newNodes makeList;
+  r2: newNodes1.makeRange;
+  "===New nodes===" LF & print
+  r2 [print LF print TRUE] enum
+  LF print
+  "===============" LF & print
+
+  TRUE
+] func;

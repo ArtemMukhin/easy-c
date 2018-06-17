@@ -1,0 +1,39 @@
+# Traverse AST tree and search declared labels.
+# The original tree is not preserved.
+# input:
+#   nodes - array of AST tree root nodes
+# output:
+#   hash table of declared labels
+#   TRUE
+#   -- or --
+#   text containing error message
+#   FALSE
+
+passDeclaredLabels: [
+  labels: HashTable;
+
+  registerFunction: [
+    label:;
+    label labels.find ~ [
+      drop
+      label 1 labels.insert
+    ] when
+  ] func;
+
+  processNodes: [
+    nodes:;
+    i: 0;  
+
+    [ i nodes fieldCount < ] [      
+      node: i nodes @;     
+
+      node "LABEL_NODE" has [ node.name registerFunction ] when
+      node "children" has [ node.children processNodes ] when
+      
+      i 1 + !i
+    ] while
+  ] func;
+
+  nodes processNodes
+  labels TRUE
+] func;
